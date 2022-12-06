@@ -40,7 +40,12 @@ arg_parser.add_argument("-o", "--ORGANISM",
                     
 arg_parser.add_argument("-f", "--FEATURE",
                     help="Caracteristica asociada al organismo",
-                    required=True)            
+                    required=True)   
+
+arg_parser.add_argument("-p","--PRINT",
+                    help = "Imprimir a pantalla los IDs de GSE",
+                    action = 'store_true',
+                    required= False)         
 arguments = arg_parser.parse_args()
 
 # Obteniendo el query con la funcion entrez_query.
@@ -49,8 +54,6 @@ query= entrez_query(arguments.ORGANISM, arguments.FEATURE)
 # Obteniendo los Ids de GSE asociados al query. 
 gse_ids = format_gse(query)
 
-handle = Entrez.esearch(db='', term=query, retmax=5, usehistory=True)
-result = Entrez.read(handle)
-handle.close()
-
-print(result["IdList"])
+# Si el usuario quiere imprimir los ids a pantalla: 
+if arguments.PRINT:
+    print(" ".join(gse_ids))
