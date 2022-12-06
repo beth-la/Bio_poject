@@ -5,8 +5,10 @@ Name
 Version
     1.0
     
-Author 
-    Lopez A. Brenda E.
+Authors
+    Delgado Gutierrez Diana 
+    Lopez Angeles Brenda E.
+    Plasencia Perez Victor Ulises
     
 Descripcion
     
@@ -27,6 +29,7 @@ See also
 from entrez_module import entrez_query
 from entrez_module import format_gse
 import argparse
+from Bio import Entrez
 
 # Argumentos
 arg_parser = argparse.ArgumentParser(description="")
@@ -45,3 +48,9 @@ query= entrez_query(arguments.ORGANISM, arguments.FEATURE)
 
 # Obteniendo los Ids de GSE asociados al query. 
 gse_ids = format_gse(query)
+
+handle = Entrez.esearch(db='', term=query, retmax=5, usehistory=True)
+result = Entrez.read(handle)
+handle.close()
+
+print(result["IdList"])

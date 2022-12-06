@@ -49,4 +49,3 @@ def format_gse(query):
     uid_regex = re.compile('[1-9]+0+([1-9]+[0-9]*)')
     gse_list = ['GSE' + uid_regex.match(uid).group(1) for uid in result['IdList']]
     return(gse_list)
-    
