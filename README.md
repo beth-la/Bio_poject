@@ -1,11 +1,18 @@
-# Bio_poject
+# Bio_poject: 
 
-# Structure 
+## Objetivo 
 
---- src: Scripts de Python
+## Structure 
 
 --- data: Archivos input para programas
 
 --- results: Archivos output de programas
 
+--- src: Scripts de Python
+
 --- readme
+
+## Resultados 
+
+## Conclusión 
+
