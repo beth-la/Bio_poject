@@ -2,7 +2,7 @@
 
 ## Objetivo 
 
-## Structure 
+## Estructura 
 
 --- data: Archivos input para programas
 
