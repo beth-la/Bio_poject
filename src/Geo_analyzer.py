@@ -33,6 +33,9 @@ import argparse
 from Bio import Entrez
 import GEOparse
 from argparse import RawTextHelpFormatter
+import numpy as np
+import pandas as pd 
+
 
 # Argumentos
 arg_parser = argparse.ArgumentParser(
@@ -53,6 +56,9 @@ arg_parser.add_argument("-id", "--GEOid",
 arg_parser.add_argument("-m", "--MODE",
                         help="Modo de uso del programa:\n \n1: Obtener los ids de GEO asociados al término. \nArgumentos requeridos: --ORGANISM, --FEATURE.\n\n2: Análisis de expresión de un ID. \nArgumentos requeridos: --GEOid",
                         required=True)
+arg_parser.add_argument("-lfc", "--logFoldChange",
+                        help="Logaritmo de duplicacion/reduccion de expresion",
+                        required=False, default=2)
 arguments = arg_parser.parse_args()
 
 
@@ -92,6 +98,62 @@ def gse_object_extract(id):
         print('platform_id: %s \n' % gse.metadata['platform_id'][0])
     return (gse)
 
+def make_DifExp_analysis(gse_objet, lfc):
+    # Obtener la plataforma
+    for platform in gse.gpls:
+        break
+    # Obtener los datos de expresion
+    pivoted_samples = gse.pivot_samples('VALUE')
+    # Obtener el promedio por filas
+    pivoted_samples_average = pivoted_samples.mean(axis=1)
+    
+    # Eliminamos el 25 % de datos mas bajos
+    expression_threshold = pivoted_samples_average.quantile(0.25)
+    # Obtenemos los ids asociadas a las muestras de expresion que 
+    # se encuentran por arriba del valor del cuantil 
+    expressed_probes = pivoted_samples_average[pivoted_samples_average >=expression_threshold].index.tolist()
+    # Acceder a las muestras con los indices recuperados
+    samples = pivoted_samples.loc[expressed_probes]
+    
+    # Obtener el disenio experimental
+    experiments = {}
+    for i, (idx, row) in enumerate(gse.phenotype_data.iterrows()):
+        tmp = {}
+        tmp["Experiment"] = idx
+        tmp["Type"] = "control" if "control" in row["title"] else "treated"
+        experiments[i] = tmp
+    experiments = pd.DataFrame(experiments).T
+    
+    # Se crea un dataframe con agrupando por treated y controles.
+    lfc_results = {}
+    for tipo, group in experiments.groupby("Type"):
+        lfc_results[tipo] = (samples.loc[:,group.Experiment].mean(axis = 1))
+    lfc_results = pd.DataFrame(lfc_results)
+    
+    interest_column = 'ILMN_Gene'
+    # Anotar con GLP
+    lfc_result_annotated = lfc_results.reset_index().merge(gse.gpls[platform].table[["ID",interest_column]],left_on='ID_REF', right_on="ID").set_index('ID_REF')
+    
+    del lfc_result_annotated["ID"]
+    
+    # Remover celdas sin Entrez
+    lfc_result_annotated = lfc_result_annotated.dropna(subset=[interest_column])
+    # Remueve celdas con mas de un gene asociado
+    lfc_result_annotated = lfc_result_annotated[~lfc_result_annotated.loc[:,interest_column].str.contains("///")]
+    # Promediar los genes por cada celda
+    lfc_result_annotated = lfc_result_annotated.groupby(interest_column).mean()
+    # Obtner el logaritmo de base
+    lfc_result_annotated = np.log2(lfc_result_annotated)
+    
+    # Obtener los genes diferencialmente expresados.
+    DEGs = abs(lfc_result_annotated.control -lfc_result_annotated.treated) > lfc
+    lfc_result_annotated.loc[:,'Diferentes'] = DEGs
+    lcf_relevant = lfc_result_annotated.loc[lfc_result_annotated.Diferentes]
+    lcf_relevant = lcf_relevant.reset_index().merge(gse.gpls[platform].table[["ILMN_Gene",'Definition','ID']], on="ILMN_Gene")
+    lcf_relevant = lcf_relevant.set_index('ILMN_Gene')
+    return(lcf_relevant)
+
+
 
 # Obteniendo el query con la funcion entrez_query.
 query = entrez_query(arguments.ORGANISM, arguments.FEATURE)
@@ -111,7 +173,8 @@ elif arguments.MODE == '2':
     if not arguments.GEOid:
         print('\nEs necesario especificar un ID.\n')
         exit(0)
-    gse_object_extract(arguments.GEOid)
+    gse = gse_object_extract(arguments.GEOid)
+    print(make_DifExp_analysis(gse, arguments.logFoldChange))
 
 else:
     print(
