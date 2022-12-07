@@ -11,7 +11,8 @@ VERSION:
 AUTHORS
     Delgado Gutierrez Diana 
     Lopez Angeles Brenda E.
-    Plasencia Perez Victor Ulises
+    Plascencia Perez Victor Ulises
+    Ávila Silva Rogelio Lael
     
 Functions
     entrez_query
