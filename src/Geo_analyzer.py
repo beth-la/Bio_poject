@@ -12,15 +12,31 @@ Authors
     Ávila Silva Rogelio Lael
     
 Descripcion
+    Programa que analiza datos que se encuentran en la base de datos GEO
     
 Category
     Biopython
     
 Usage
-    Python Geo_analyzer.py [-h] -o ORGANISM -f FEATURE
+    Python Geo_analyzer.py [-h] [-o ORGANISM] [-f FEATURE] [-id GEOID] -m MODE [-lfc LOGFOLDCHANGE]
     
 Arguments
-    -h --help
+  -h, --help            show this help message and exit
+  -o ORGANISM, --ORGANISM ORGANISM
+                        Organismo para el cual se desea encontrar información
+  -f FEATURE, --FEATURE FEATURE
+                        Caracteristica asociada al organismo
+  -id GEOID, --GEOid GEOID
+                        ID de la base de datos GEO
+  -m MODE, --MODE MODE  Modo de uso del programa:
+
+                        1: Obtener los ids de GEO asociados al término.
+                        Argumentos requeridos: --ORGANISM, --FEATURE.
+
+                        2: Análisis de expresión de un ID.
+                        Argumentos requeridos: --GEOid
+  -lfc LOGFOLDCHANGE, --logFoldChange LOGFOLDCHANGE
+                        Logaritmo de duplicacion/reduccion de expresion
 
 See also
     None
@@ -35,11 +51,11 @@ import GEOparse
 from argparse import RawTextHelpFormatter
 import numpy as np
 import pandas as pd 
-
+from dexs_module import *
 
 # Argumentos
 arg_parser = argparse.ArgumentParser(
-    description="", formatter_class=RawTextHelpFormatter)
+    description="Analizador de base de datos GEO", formatter_class=RawTextHelpFormatter)
 
 arg_parser.add_argument("-o", "--ORGANISM",
                         help="Organismo para el cual se desea encontrar información",
@@ -56,6 +72,7 @@ arg_parser.add_argument("-id", "--GEOid",
 arg_parser.add_argument("-m", "--MODE",
                         help="Modo de uso del programa:\n \n1: Obtener los ids de GEO asociados al término. \nArgumentos requeridos: --ORGANISM, --FEATURE.\n\n2: Análisis de expresión de un ID. \nArgumentos requeridos: --GEOid",
                         required=True)
+                        
 arg_parser.add_argument("-lfc", "--logFoldChange",
                         help="Logaritmo de duplicacion/reduccion de expresion",
                         required=False, default=2)
@@ -153,8 +170,6 @@ def make_DifExp_analysis(gse_objet, lfc):
     lcf_relevant = lcf_relevant.set_index('ILMN_Gene')
     return(lcf_relevant)
 
-
-
 # Obteniendo el query con la funcion entrez_query.
 query = entrez_query(arguments.ORGANISM, arguments.FEATURE)
 # Dependiendo del modo se ejecuta un código u otro.
@@ -174,7 +189,16 @@ elif arguments.MODE == '2':
         print('\nEs necesario especificar un ID.\n')
         exit(0)
     gse = gse_object_extract(arguments.GEOid)
-    print(make_DifExp_analysis(gse, arguments.logFoldChange))
+
+    # Obteniendo un objeto de tipo dexs
+    dexs_object = make_DifExp_analysis(gse, arguments.logFoldChange)
+    print(dexs_object)
+
+    # Imprimiendo el objeto:
+    object_dexs = dexs(dexs_object)
+
+    # Atributo del objeto dexs para obtener el clustermap
+    object_dexs.dexs_clustermap 
 
 else:
     print(
