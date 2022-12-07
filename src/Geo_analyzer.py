@@ -56,10 +56,6 @@ arg_parser.add_argument("-m", "--MODE",
 arguments = arg_parser.parse_args()
 
 
-def MissingArgumentError(Exception):
-    pass
-
-
 def gse_object_extract(id):
     """
     Funcion: 
@@ -94,37 +90,29 @@ def gse_object_extract(id):
     # platform_ids
     if 'platform_id' in gse.metadata:
         print('platform_id: %s \n' % gse.metadata['platform_id'][0])
-
     return (gse)
 
 
-try:
-    # Obteniendo el query con la funcion entrez_query.
-    query = entrez_query(arguments.ORGANISM, arguments.FEATURE)
-    # Dependiendo del modo se ejecuta un código u otro.
-    if arguments.MODE == '1':
-        if not arguments.ORGANISM:
-            raise MissingArgumentError(
-                '\nEs necesario especificar un organismo.\n')
-        elif not arguments.FEATURE:
-            raise MissingArgumentError(
-                '\nEs necesario especificar un feature.\n')
-        elif not arguments.FEATURE and not arguments.ORGANISM:
-            raise MissingArgumentError(
-                '\nEs necesario especificar un organismo y un feature.\n')
-        # Obteniendo los Ids de GSE asociados al query.
-        gse_ids = format_gse(query)
+# Obteniendo el query con la funcion entrez_query.
+query = entrez_query(arguments.ORGANISM, arguments.FEATURE)
+# Dependiendo del modo se ejecuta un código u otro.
 
-        # Imprimir los IDs de GSE asociados
-        print(" ".join(gse_ids))
+if arguments.MODE == '1':
+    if not arguments.ORGANISM or not arguments.FEATURE:
+        print('\nFaltan argumentos, consultar opcion -h\n')
+        exit(0)
+    # Obteniendo los Ids de GSE asociados al query.
+    gse_ids = format_gse(query)
 
-    elif arguments.MODE == '2':
-        if not arguments.GEOid:
-            raise MissingArgumentError('\nEs necesario especificar un ID.\n')
-        gse_object_extract(arguments.GEOid)
+    # Imprimir los IDs de GSE asociados
+    print(" ".join(gse_ids))
 
-    else:
-        raise MissingArgumentError(
-            '\nEs necesario especificar un modo valido.\n')
-except MissingArgumentError as ex:
-    print(ex.args[0])
+elif arguments.MODE == '2':
+    if not arguments.GEOid:
+        print('\nEs necesario especificar un ID.\n')
+        exit(0)
+    gse_object_extract(arguments.GEOid)
+
+else:
+    print(
+        '\nEs anecesario especificar un modo valido.\n')
