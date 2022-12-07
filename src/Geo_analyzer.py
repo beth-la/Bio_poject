@@ -202,4 +202,4 @@ elif arguments.MODE == '2':
 
 else:
     print(
-        '\nEs anecesario especificar un modo valido.\n')
+        '\nEs necesario especificar un modo valido.\n')
