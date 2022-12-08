@@ -62,8 +62,8 @@ from Bio import Entrez
 import GEOparse
 from argparse import RawTextHelpFormatter
 import numpy as np
-import pandas as pd 
-
+import pandas as pd
+from dexs_class import *
 
 # Argumentos
 arg_parser = argparse.ArgumentParser(
@@ -102,7 +102,7 @@ arguments = arg_parser.parse_args()
 def gse_object_extract(id):
     """
     Funcion: 
-        Busta metadatos de experimentos con los GEO IDs proporcionados. 
+        Busca metadatos de experimentos con los GEO IDs proporcionados. 
 
     Args:
         ids (list): lista con GEO IDs
@@ -135,6 +135,7 @@ def gse_object_extract(id):
         print('platform_id: %s \n' % gse.metadata['platform_id'][0])
     return (gse)
 
+
 def make_DifExp_analysis(gse_objet, lfc, controls, samples, annot_column_name):
     """
     Funcion: 
@@ -162,53 +163,59 @@ def make_DifExp_analysis(gse_objet, lfc, controls, samples, annot_column_name):
     pivoted_samples = gse.pivot_samples('VALUE')[samples]
     # Obtener el promedio por filas
     pivoted_samples_average = pivoted_samples.mean(axis=1)
-    
+
     # Eliminamos el 25 % de datos mas bajos
     expression_threshold = pivoted_samples_average.quantile(0.25)
-    # Obtenemos los ids asociadas a las muestras de expresion que 
-    # se encuentran por arriba del valor del cuantil 
-    expressed_probes = pivoted_samples_average[pivoted_samples_average >=expression_threshold].index.tolist()
+    # Obtenemos los ids asociadas a las muestras de expresion que
+    # se encuentran por arriba del valor del cuantil
+    expressed_probes = pivoted_samples_average[pivoted_samples_average >=
+                                               expression_threshold].index.tolist()
     # Acceder a las muestras con los indices recuperados
     samples = pivoted_samples.loc[expressed_probes]
-    
+
     # Obtener el disenio experimental
     experiments = {}
-    for i,idx in enumerate(samples):
+    for i, idx in enumerate(samples):
         tmp = {}
         tmp["Experiment"] = idx
         tmp["Type"] = "control" if idx in controls else "samples"
         experiments[i] = tmp
     experiments = pd.DataFrame(experiments).T
-    
+
     # Se crea un dataframe con agrupando por muestras y controles.
     lfc_results = {}
     for tipo, group in experiments.groupby("Type"):
-        lfc_results[tipo] = (samples.loc[:,group.Experiment].mean(axis = 1))
+        lfc_results[tipo] = (samples.loc[:, group.Experiment].mean(axis=1))
     lfc_results = pd.DataFrame(lfc_results)
-    
+
     # Nombre de la columna que contiene los datos de anot
     interest_column = annot_column_name
     # Anotar con GLP
-    lfc_result_annotated = lfc_results.reset_index().merge(gse.gpls[platform].table[["ID",interest_column]],left_on='ID_REF', right_on="ID").set_index('ID_REF')
-    
+    lfc_result_annotated = lfc_results.reset_index().merge(gse.gpls[platform].table[[
+        "ID", interest_column]], left_on='ID_REF', right_on="ID").set_index('ID_REF')
+
     del lfc_result_annotated["ID"]
-    
+
     # Remover celdas sin Entrez
-    lfc_result_annotated = lfc_result_annotated.dropna(subset=[interest_column])
+    lfc_result_annotated = lfc_result_annotated.dropna(
+        subset=[interest_column])
     # Remueve celdas con mas de un gene asociado
-    lfc_result_annotated = lfc_result_annotated[~lfc_result_annotated.loc[:,interest_column].str.contains("///")]
+    lfc_result_annotated = lfc_result_annotated[~lfc_result_annotated.loc[:, interest_column].str.contains(
+        "///")]
     # Promediar los genes por cada celda
     lfc_result_annotated = lfc_result_annotated.groupby(interest_column).mean()
     # Obtner el logaritmo de base
     lfc_result_annotated = np.log2(lfc_result_annotated)
 
     # Obtener los genes diferencialmente expresados.
-    DEGs = abs(lfc_result_annotated.control -lfc_result_annotated.samples) > lfc
+    DEGs = abs(lfc_result_annotated.control -
+               lfc_result_annotated.samples) > lfc
 
-    lfc_result_annotated.loc[:,'Diferentes'] = DEGs
+    lfc_result_annotated.loc[:, 'Diferentes'] = DEGs
     lcf_relevant = lfc_result_annotated.loc[lfc_result_annotated.Diferentes]
     # Aqui podriamos aniadir una excepcion
-    lcf_relevant = lcf_relevant.reset_index().merge(gse.gpls[platform].table[[interest_column,'ID']], on=interest_column)
+    lcf_relevant = lcf_relevant.reset_index().merge(
+        gse.gpls[platform].table[[interest_column, 'ID']], on=interest_column)
     lcf_relevant = lcf_relevant.set_index('ID')
     return(lcf_relevant)
 
@@ -218,7 +225,7 @@ query = entrez_query(arguments.ORGANISM, arguments.FEATURE)
 # Dependiendo del modo se ejecuta un código u otro.
 
 if arguments.MODE == '1':
-    # Verificar que se proporcionaron los 
+    # Verificar que se proporcionaron los
     # argumentos necesarios
     if not arguments.ORGANISM or not arguments.FEATURE:
         print('\nFaltan argumentos, consultar opcion -h\n')
@@ -230,10 +237,10 @@ if arguments.MODE == '1':
     print(" ".join(gse_ids))
 
 elif arguments.MODE == '2':
-    # Verificar que se proporcionaron los 
+    # Verificar que se proporcionaron los
     # argumentos necesarios
     if not arguments.GEOid or not arguments.controlsID\
-         or not arguments.samplesID or not arguments.annotName:
+            or not arguments.samplesID or not arguments.annotName:
         print('\nFaltan argumentos para la opcion especificada.\n')
         exit(0)
     # Convertir los parametros a los TD
@@ -243,9 +250,17 @@ elif arguments.MODE == '2':
     controls = arguments.controlsID
     samples_list = samples.split(',')
     controls_list = controls.split(',')
-    # Llamar a la funcion para hacer 
+    # Llamar a la funcion para hacer
     # el analisis de expresion diff
-    print(make_DifExp_analysis(gse_objet= gse, lfc= arguments.logFoldChange, controls= controls_list, samples=samples_list, annot_column_name= arguments.annotName))
+    dexs_object = (make_DifExp_analysis(gse_objet=gse, lfc=arguments.logFoldChange,
+                                        controls=controls_list, samples=samples_list, annot_column_name=arguments.annotName))
+
+    # Imprimiendo el objeto:
+    print(dexs_object)
+
+    # Generar un cluester map
+    sns.clustermap(dexs_object.loc[:, ['control', 'samples']])
+    plt.show()
 
 else:
     print(
