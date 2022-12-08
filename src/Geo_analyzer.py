@@ -230,7 +230,6 @@ def make_DifExp_analysis(gse_objet, lfc, controls,
     lcf_relevant = lfc_result_annotated.loc[lfc_result_annotated.Diferentes]
     lcf_relevant = lcf_relevant.reset_index().merge(
         gse.gpls[platform].table[[interest_column, 'ID']], on=interest_column)
-    #lcf_relevant = lcf_relevant.set_index('ID')
     return (lcf_relevant)
 
 
