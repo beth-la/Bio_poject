@@ -3,7 +3,7 @@ Name
     Geo_analyzer.py
 
 Version
-    1.2
+    1.3
 
 Authors
     Delgado Gutierrez Diana
