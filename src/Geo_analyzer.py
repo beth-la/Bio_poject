@@ -255,8 +255,17 @@ elif arguments.MODE == '2':
     # el analisis de expresion diff
     dexs_object = (make_DifExp_analysis(gse_objet=gse, lfc=arguments.logFoldChange,
                                         controls=controls_list, samples=samples_list, annot_column_name=arguments.annotName))
-    # Imprimir DF con los DEGs
-    print(dexs_object)
+    # Mostrar el dataframe completo
+    pd.set_option('display.max_rows', None)
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.width', None)
+    pd.set_option('display.max_colwidth', -1)
+
+    # Guardar el DF con los DEGs en archivo
+    file = open(f'./results/{arguments.GEOid}.tab', 'w')
+    file.write(str(dexs_object))
+    file.close()
+    print(f"\nArchivo {arguments.GEOid}.tab generado exitosamente\n")
     # Casting a objeto dexs:
     dexs_object = dexs(dexs_object)
     # Generar un cluester map
