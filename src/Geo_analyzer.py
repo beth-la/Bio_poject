@@ -6,16 +6,16 @@ Version
     1.2
     
 Authors
-    Delgado Gutierrez Diana 
+    Delgado Gutierrez Diana
     Lopez Angeles Brenda E.
     Plasencia Perez Victor Ulises
     Ávila Silva Rogelio Lael
-    
+
 Descripcion
-    Modo 1: obtiene IDs de la db GEO asociados 
+    Modo 1: obtiene IDs de la db GEO asociados
         a un estado(feature) y un organismo
     Modo 2: Regresa un DF con los DEGs y un heatmap
-        dados un ID, una lista de IDs de controles, 
+        dados un ID, una lista de IDs de controles,
         una lista de IDs de muestras y un nombre
         de la columna de la tabla de la plataforma
         que contiene los datos de anotacion
@@ -25,7 +25,7 @@ Usage
     Modo 1: Python Geo_analyzer.py -o ORGANISM -f FEATURE
     Modo 2: Python Geo_analyzer.py -ID GEOID -c CONTROLSID
         -s SAMPLESID -an ANNOTNAME
-    
+
 Arguments
      -h, --help            show this help message and exit
     -o ORGANISM, --ORGANISM ORGANISM
@@ -104,14 +104,14 @@ arguments = arg_parser.parse_args()
 
 def gse_object_extract(id):
     """
-    Funcion: 
-        Busca metadatos de experimentos con los GEO IDs proporcionados. 
+    Funcion:
+        Busca metadatos de experimentos con los GEO IDs proporcionados.
 
     Args:
         ids (list): lista con GEO IDs
     Returns:
         object: class GEOparse.GEOTypes.GSE(name, metadata)
-        A pantalla: Título, resumen, tipo y platform_id de los 
+        A pantalla: Título, resumen, tipo y platform_id de los
                     GEO IDs proporcionados.
     """
     # obtener el objeto gse
@@ -141,8 +141,8 @@ def gse_object_extract(id):
 
 def make_DifExp_analysis(gse_objet, lfc, controls, samples, annot_column_name):
     """
-    Funcion: 
-        Obtiene los DEGs y su anotacion a partir de un gse_objet 
+    Funcion:
+        Obtiene los DEGs y su anotacion a partir de un gse_objet
 
     Args:
         ids (list): lista con GEO IDs
@@ -151,7 +151,7 @@ def make_DifExp_analysis(gse_objet, lfc, controls, samples, annot_column_name):
         controls (list): lista con los IDs de los controles
         samples (list): lista con los IDs de las muestras
         annot_column_name(str): cadena con el nombre de la
-            columna que contiene los nombres de los genes en 
+            columna que contiene los nombres de los genes en
             la plataforma
     Returns:
         DF con los DEGs, sus IDs, su anotacion y sus niveles de expr.
@@ -194,9 +194,8 @@ def make_DifExp_analysis(gse_objet, lfc, controls, samples, annot_column_name):
     # Nombre de la columna que contiene los datos de anot
     interest_column = annot_column_name
     # Anotar con GLP
-    lfc_result_annotated = lfc_results.reset_index().merge(gse.gpls[platform]
-                                                           .table[["ID", interest_column]],
-                                                           left_on='ID_REF', right_on="ID").set_index('ID_REF')
+    lfc_result_annotated = lfc_results.reset_index().merge(gse.gpls[platform].table[[
+        "ID", interest_column]], left_on='ID_REF', right_on="ID").set_index('ID_REF')
 
     del lfc_result_annotated["ID"]
 
@@ -204,9 +203,8 @@ def make_DifExp_analysis(gse_objet, lfc, controls, samples, annot_column_name):
     lfc_result_annotated = lfc_result_annotated.dropna(
         subset=[interest_column])
     # Remueve celdas con mas de un gene asociado
-    lfc_result_annotated = lfc_result_annotated[~lfc_result_annotated
-                                                .loc[:, interest_column]
-                                                .str.contains("///")]
+    lfc_result_annotated = lfc_result_annotated[~lfc_result_annotated.loc[:, interest_column].str.contains(
+        "///")]
     # Promediar los genes por cada celda
     lfc_result_annotated = lfc_result_annotated.groupby(interest_column).mean()
     # Obtner el logaritmo de base
@@ -218,13 +216,15 @@ def make_DifExp_analysis(gse_objet, lfc, controls, samples, annot_column_name):
 
     lfc_result_annotated.loc[:, 'Diferentes'] = DEGs
     lcf_relevant = lfc_result_annotated.loc[lfc_result_annotated.Diferentes]
-    # Aqui podriamos aniadir una excepcion
     lcf_relevant = lcf_relevant.reset_index().merge(
         gse.gpls[platform].table[[interest_column, 'ID']], on=interest_column)
     lcf_relevant = lcf_relevant.set_index('ID')
     return (lcf_relevant)
+    #lcf_relevant = lcf_relevant.set_index('ID')
+    return (lcf_relevant)
 
 
+# Programa principal
 # Obteniendo el query con la funcion entrez_query.
 query = entrez_query(arguments.ORGANISM, arguments.FEATURE)
 # Dependiendo del modo se ejecuta un código u otro.
@@ -240,6 +240,7 @@ if arguments.MODE == '1':
 
     # Imprimir los IDs de GSE asociados
     print(" ".join(gse_ids))
+
 
 elif arguments.MODE == '2':
     # Verificar que se proporcionaron los
@@ -257,19 +258,23 @@ elif arguments.MODE == '2':
     controls_list = controls.split(',')
     # Llamar a la funcion para hacer
     # el analisis de expresion diff
-    dexs_object = (make_DifExp_analysis(gse_objet=gse, 
-                                        lfc=arguments.logFoldChange,
-                                        controls=controls_list, 
-                                        samples=samples_list,
-                                        annot_column_name=arguments.annotName))
+    dexs_object = (make_DifExp_analysis(gse_objet=gse, lfc=arguments.logFoldChange,
+                                        controls=controls_list, samples=samples_list, annot_column_name=arguments.annotName))
+    # Mostrar el dataframe completo
+    pd.set_option('display.max_rows', None)
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.width', None)
+    pd.set_option('display.max_colwidth', -1)
 
-    # Imprimiendo el objeto:
-    print(dexs_object)
-
+    # Guardar el DF con los DEGs en archivo
+    file = open(f'./results/{arguments.GEOid}.tab', 'w')
+    file.write(str(dexs_object))
+    file.close()
+    print(f"\nArchivo {arguments.GEOid}.tab generado exitosamente\n")
+    # Casting a objeto dexs:
+    dexs_object = dexs(dexs_object)
     # Generar un cluester map
-    sns.clustermap(dexs_object.loc[:, ['control', 'samples']])
-    plt.show()
-
+    dexs_object.dexs_clustermap
 else:
     print(
         '\nEs anecesario especificar un modo valido.\n')
