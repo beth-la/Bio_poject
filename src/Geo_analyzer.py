@@ -82,7 +82,10 @@ arg_parser.add_argument("-id", "--GEOid",
                         required=False)
 
 arg_parser.add_argument("-m", "--MODE",
-                        help="Modo de uso del programa:\n \n1: Obtener los ids de GEO asociados al término. \nArgumentos requeridos: --ORGANISM, --FEATURE.\n\n2: Análisis de expresión de un ID. \nArgumentos requeridos: --GEOid",
+                        help="Modo de uso del programa:\n \
+                        \n1: Obtener los ids de GEO asociados al término. \
+                        \nArgumentos requeridos: --ORGANISM, --FEATURE.\n \
+                        \n2: Análisis de expresión de un ID. \nArgumentos requeridos: --GEOid",
                         required=True)
 arg_parser.add_argument("-lfc", "--logFoldChange",
                         help="Logaritmo de duplicacion/reduccion de expresion",
@@ -191,8 +194,9 @@ def make_DifExp_analysis(gse_objet, lfc, controls, samples, annot_column_name):
     # Nombre de la columna que contiene los datos de anot
     interest_column = annot_column_name
     # Anotar con GLP
-    lfc_result_annotated = lfc_results.reset_index().merge(gse.gpls[platform].table[[
-        "ID", interest_column]], left_on='ID_REF', right_on="ID").set_index('ID_REF')
+    lfc_result_annotated = lfc_results.reset_index().merge(gse.gpls[platform]
+                                                           .table[["ID", interest_column]],
+                                                           left_on='ID_REF', right_on="ID").set_index('ID_REF')
 
     del lfc_result_annotated["ID"]
 
@@ -200,8 +204,9 @@ def make_DifExp_analysis(gse_objet, lfc, controls, samples, annot_column_name):
     lfc_result_annotated = lfc_result_annotated.dropna(
         subset=[interest_column])
     # Remueve celdas con mas de un gene asociado
-    lfc_result_annotated = lfc_result_annotated[~lfc_result_annotated.loc[:, interest_column].str.contains(
-        "///")]
+    lfc_result_annotated = lfc_result_annotated[~lfc_result_annotated
+                                                .loc[:, interest_column]
+                                                .str.contains("///")]
     # Promediar los genes por cada celda
     lfc_result_annotated = lfc_result_annotated.groupby(interest_column).mean()
     # Obtner el logaritmo de base
@@ -217,7 +222,7 @@ def make_DifExp_analysis(gse_objet, lfc, controls, samples, annot_column_name):
     lcf_relevant = lcf_relevant.reset_index().merge(
         gse.gpls[platform].table[[interest_column, 'ID']], on=interest_column)
     lcf_relevant = lcf_relevant.set_index('ID')
-    return(lcf_relevant)
+    return (lcf_relevant)
 
 
 # Obteniendo el query con la funcion entrez_query.
@@ -252,8 +257,11 @@ elif arguments.MODE == '2':
     controls_list = controls.split(',')
     # Llamar a la funcion para hacer
     # el analisis de expresion diff
-    dexs_object = (make_DifExp_analysis(gse_objet=gse, lfc=arguments.logFoldChange,
-                                        controls=controls_list, samples=samples_list, annot_column_name=arguments.annotName))
+    dexs_object = (make_DifExp_analysis(gse_objet=gse, 
+                                        lfc=arguments.logFoldChange,
+                                        controls=controls_list, 
+                                        samples=samples_list,
+                                        annot_column_name=arguments.annotName))
 
     # Imprimiendo el objeto:
     print(dexs_object)
